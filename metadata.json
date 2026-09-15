@@ -1,0 +1,9 @@
+{
+  "uuid": "audiorec@mdoksa76.github.com",
+  "name": "AudioRec",
+  "description": "One-click microphone recording from Quick Settings. Each recording gets a name and always stays on disk; you choose whether it also goes into the store (voice reminders) for quick access. Per-item play / rename / pin / delete. While recording, a red indicator with a timer appears in the panel and doubles as the stop button. Records with ffmpeg (Opus), plays back with ffplay.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "url": "https://github.com/mdoksa76/audiorec",
+  "settings-schema": "org.gnome.shell.extensions.audiorec",
+  "gettext-domain": "audiorec"
+}

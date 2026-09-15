@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.audiorec"
+          path="/org/gnome/shell/extensions/audiorec/">
+    <key name="record-dir" type="s">
+      <default>''</default>
+      <summary>Recordings directory</summary>
+      <description>
+        Absolute path where all recordings are saved. Empty = ~/AudioRec.
+      </description>
+    </key>
+    <key name="bitrate" type="i">
+      <default>96</default>
+      <summary>Opus bitrate (kbps)</summary>
+      <description>
+        Target Opus encoder bitrate in kbps. 24 = speech (smallest file),
+        48 = balanced, 96 = music / quality headroom (e.g. for later song
+        recognition). Allowed values: 24, 48, 96.
+      </description>
+    </key>
+  </schema>
+</schemalist>
