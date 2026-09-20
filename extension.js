@@ -92,10 +92,14 @@ class StopDialog extends ModalDialog.ModalDialog {
             ? {name: this._entry.get_text(), keep: this._toggle.state}
             : null;
         this.close(global.get_current_time());
-        this._entry = null;
-        this._toggle = null;
         if (this._onConfirm)
             this._onConfirm(result);
+    }
+
+    destroy() {
+        this._entry = null;
+        this._toggle = null;
+        super.destroy();
     }
 });
 
@@ -135,9 +139,13 @@ class RenameDialog extends ModalDialog.ModalDialog {
     _finish(confirmed) {
         const name = confirmed ? this._entry.get_text() : null;
         this.close(global.get_current_time());
-        this._entry = null;
         if (this._onConfirm)
             this._onConfirm(name);
+    }
+
+    destroy() {
+        this._entry = null;
+        super.destroy();
     }
 });
 
