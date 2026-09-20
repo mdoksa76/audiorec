@@ -97,7 +97,9 @@ class StopDialog extends ModalDialog.ModalDialog {
     }
 
     destroy() {
+        this._entry?.destroy();
         this._entry = null;
+        this._toggle?.destroy();
         this._toggle = null;
         super.destroy();
     }
@@ -144,6 +146,7 @@ class RenameDialog extends ModalDialog.ModalDialog {
     }
 
     destroy() {
+        this._entry?.destroy();
         this._entry = null;
         super.destroy();
     }
