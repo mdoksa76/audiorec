@@ -92,6 +92,8 @@ class StopDialog extends ModalDialog.ModalDialog {
             ? {name: this._entry.get_text(), keep: this._toggle.state}
             : null;
         this.close(global.get_current_time());
+        this._entry = null;
+        this._toggle = null;
         if (this._onConfirm)
             this._onConfirm(result);
     }
@@ -133,6 +135,7 @@ class RenameDialog extends ModalDialog.ModalDialog {
     _finish(confirmed) {
         const name = confirmed ? this._entry.get_text() : null;
         this.close(global.get_current_time());
+        this._entry = null;
         if (this._onConfirm)
             this._onConfirm(name);
     }
@@ -586,6 +589,9 @@ class AudioRecController {
             this._indicator.destroy();
             this._indicator = null;
         }
+        this._playButtons = null;
+        this._settings = null;
+        this.store = null;
     }
 }
 
