@@ -1,26 +1,3 @@
-/* extension.js — AudioRec
- *
- * Snimanje mikrofona s domom u Quick Settings (kao Bluetooth / Caffeine).
- *
- * Model interakcije:
- *   - QS pločica "AudioRec": tap na tijelo = START snimanja (i STOP ako već snima).
- *     Pločica svijetli dok snima.
- *   - Strelica na pločici → skrolabilni SPREMNIK čuvanih snimaka
- *     (play / preimenuj / pin / makni-iz-spremnika / obriši-fajl).
- *   - DOK SNIMA: u panelu (lijevo od sistemskih ikona) iskoči CRVENI KRUG + TIMER.
- *     Taj crveni krug je ujedno STOP dugme — klik zaustavlja snimanje.
- *   - Na STOP (bilo s panela, bilo s pločice): dijalog s poljem za naziv +
- *     toggle "Dodaj u spremnik". Fajl UVIJEK ide na disk pod danim nazivom;
- *     toggle odlučuje ulazi li i u spremnik (popis u QS pločici).
- *   - U mirovanju: NIŠTA u panelu. AudioRec živi samo kao QS pločica.
- *
- * Snimanje: ffmpeg + libopus (PipeWire preko pulse sloja). Reprodukcija: ffplay.
- * Oboje preko
- * Gio.Subprocess — ekstenzija sama ne dira audio, samo orkestrira.
- *
- * GNOME Shell 45–50 (ESM, Extension klasa, Quick Settings API 45+).
- */
-
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -36,7 +13,7 @@ import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js'
 const RECORD_EXT = 'opus';
 const STORE_VISIBLE_ROWS = 6;
 
-/* ---------- pomoćne ---------- */
+/* Helpers */
 
 function formatDuration(totalSeconds) {
     const s = Math.max(0, Math.floor(totalSeconds));
@@ -56,7 +33,7 @@ function sanitizeFilename(name) {
     return trimmed.replace(/[\/\\:*?"<>|]/g, '_');
 }
 
-/* ================= Dijalozi ================= */
+/* Dialogs */
 
 const StopDialog = GObject.registerClass(
 class StopDialog extends ModalDialog.ModalDialog {
@@ -161,7 +138,7 @@ class RenameDialog extends ModalDialog.ModalDialog {
     }
 });
 
-/* ============ Panel STOP dugme (crveni krug + timer) ============ */
+/* Panel stop button */
 
 const RecordingButton = GObject.registerClass(
 class RecordingButton extends St.Button {
@@ -199,7 +176,7 @@ class RecordingButton extends St.Button {
     }
 });
 
-/* ================= QS pločica ================= */
+/* Quick Settings toggle */
 
 const AudioRecToggle = GObject.registerClass(
 class AudioRecToggle extends QuickSettings.QuickMenuToggle {
@@ -244,7 +221,6 @@ class AudioRecToggle extends QuickSettings.QuickMenuToggle {
 
     rebuildList() {
         this._listSection.removeAll();
-        // Mapa path -> play gumb, da kontroler zna obojiti/vratiti onaj koji svira.
         this._playButtons = new Map();
         this._controller.setPlayButtons(this._playButtons);
 
@@ -320,7 +296,6 @@ class AudioRecToggle extends QuickSettings.QuickMenuToggle {
             onClick();
             return Clutter.EVENT_STOP;
         });
-        // Helper: prikaži da ova snimka svira (crvena stop-ikona) ili miruje (play).
         btn.setPlaying = (playing) => {
             icon.icon_name = playing
                 ? 'media-playback-stop-symbolic'
@@ -351,7 +326,7 @@ class AudioRecIndicator extends QuickSettings.SystemIndicator {
     }
 });
 
-/* ================= Kontroler ================= */
+/* Controller */
 
 class AudioRecController {
     constructor(extension) {
@@ -393,7 +368,6 @@ class AudioRecController {
     }
 
     _bitrate() {
-        // Dozvoljene: 24 / 48 / 96. Sve ostalo pada na 96 (siguran default).
         const b = this._settings.get_int('bitrate');
         return [24, 48, 96].includes(b) ? b : 96;
     }
@@ -403,9 +377,6 @@ class AudioRecController {
         const tmpName = `audiorec_${timestampSlug()}.${RECORD_EXT}`;
         this._currentPath = GLib.build_filenamev([dir, tmpName]);
 
-        // ffmpeg hvata mikrofon preko PulseAudio sloja (PipeWire ga pruža na
-        // Fedori) i kodira u Opus. libopus na 96 kbps je praktički transparentan;
-        // 33 s ~ 400 KB. SIGINT (stop) ffmpeg uredno zatvori i flusha datoteku.
         const rate = this._bitrate();
         const argv = [
             'ffmpeg',
@@ -413,7 +384,7 @@ class AudioRecController {
             '-f', 'pulse', '-i', 'default',
             '-c:a', 'libopus',
             '-b:a', `${rate}k`,
-            '-application', 'audio',   // Opus mod: audio (bolje od 'voip' za glazbu)
+            '-application', 'audio',
             '-y', this._currentPath,
         ];
 
@@ -548,24 +519,18 @@ class AudioRecController {
 
     setPlayButtons(map) {
         this._playButtons = map;
-        // Ako nešto svira i lista se obnovi, oboji novododani gumb te snimke.
         if (this._playingPath && map.has(this._playingPath))
             map.get(this._playingPath).setPlaying(true);
     }
 
     togglePlay(path, btn) {
-        // Klik na snimku koja već svira => zaustavi (play/stop toggle).
         if (this._playingPath === path) {
             this._stopPlayback();
             return;
         }
-        // Pokretanje druge => vrati prethodni gumb, pa pokreni novu.
         this._stopPlayback();
 
         try {
-            // ffplay dijeli dekodere s ffmpeg-om pa sigurno svira Opus.
-            // -nodisp: bez prozora, -autoexit: izađe na kraju snimke,
-            // -loglevel error: tiho. SIGINT (stop) ga uredno prekine.
             this._playProc = Gio.Subprocess.new(
                 ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'error', path],
                 Gio.SubprocessFlags.NONE);
@@ -580,7 +545,6 @@ class AudioRecController {
 
         this._playProc.wait_async(null, (proc, res) => {
             try { proc.wait_finish(res); } catch (_e) {}
-            // Reprodukcija završila sama => vrati gumb u "play" stanje.
             this._clearPlayingVisual();
             this._playProc = null;
             this._playingPath = null;
@@ -595,7 +559,6 @@ class AudioRecController {
     }
 
     _stopPlayback() {
-        // Zaustavi tekuću reprodukciju i vrati njen gumb u normalu.
         this._clearPlayingVisual();
         if (this._playProc) {
             try { this._playProc.send_signal(2); } catch (_e) {}
@@ -626,7 +589,7 @@ class AudioRecController {
     }
 }
 
-/* ================= Entry point ================= */
+/* Entry point */
 
 export default class AudioRecExtension extends Extension {
     async enable() {
