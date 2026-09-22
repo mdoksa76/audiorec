@@ -1,13 +1,5 @@
-/* AudioRec stylesheet */
-
-/* Crveni record krug — koristi se u panel stop dugmetu dok snima. */
 .audiorec-recording {
     color: #e01b24;
-}
-
-/* Panel stop dugme: crveni krug + timer, vidljivo samo dok snima. */
-.audiorec-stop-button {
-    /* ponaša se kao standardno panel dugme; hover/focus nasljeđuje od panel-button */
 }
 
 .audiorec-stop-box {
@@ -17,21 +9,14 @@
 .audiorec-timer {
     font-feature-settings: "tnum";
     color: #e01b24;
-    /* fiksna min-širina da se traka ne trese na 0:59 -> 1:00 */
     min-width: 34px;
     text-align: left;
 }
 
-/* Skrolabilni spremnik u QS pločici */
 .audiorec-store-scroll-item {
     padding: 0;
 }
 
-.audiorec-store-scroll {
-    /* max-height se postavlja iz koda (broj vidljivih redaka) */
-}
-
-/* Stop / rename dijalozi */
 .audiorec-dialog-content {
     spacing: 10px;
     padding: 8px 4px;
@@ -52,7 +37,6 @@
     padding-top: 6px;
 }
 
-/* Gumbi u redu spremnika (play/rename/pin/remove/delete) */
 .audiorec-row-button {
     padding: 0 4px;
 }

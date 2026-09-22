@@ -158,7 +158,7 @@ const RecordingButton = GObject.registerClass(
 class RecordingButton extends St.Button {
     _init(onStop) {
         super._init({
-            style_class: 'panel-button audiorec-stop-button',
+            style_class: 'panel-button',
             reactive: true, can_focus: true, track_hover: true,
         });
         this._onStop = onStop;
@@ -209,7 +209,6 @@ class AudioRecToggle extends QuickSettings.QuickMenuToggle {
         this._listSection = new PopupMenu.PopupMenuSection();
 
         this._scroll = new St.ScrollView({
-            style_class: 'audiorec-store-scroll',
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             overlay_scrollbars: true,
