@@ -253,10 +253,16 @@ class AudioRecToggle extends QuickSettings.QuickMenuToggle {
     _buildRow(item) {
         const row = new PopupMenu.PopupBaseMenuItem({activate: false});
 
-        const pin = item.pinned ? '📌 ' : '';
+        if (item.pinned) {
+            row.add_child(new St.Icon({
+                icon_name: 'view-pin-symbolic',
+                style_class: 'popup-menu-icon audiorec-pin-icon',
+                y_align: Clutter.ActorAlign.CENTER,
+            }));
+        }
         const dur = item.duration ? `  (${formatDuration(item.duration)})` : '';
         row.add_child(new St.Label({
-            text: `${pin}${item.name}${dur}`,
+            text: `${item.name}${dur}`,
             x_expand: true, y_align: Clutter.ActorAlign.CENTER,
         }));
 
@@ -290,8 +296,8 @@ class AudioRecToggle extends QuickSettings.QuickMenuToggle {
             }));
 
         row.add_child(this._iconBtn('user-trash-symbolic',
-            _('Delete file from disk'), async () => {
-                await this._controller.store.deleteFile(item.id);
+            _('Move to Trash'), async () => {
+                await this._controller.store.trashFile(item.id);
                 this.rebuildList();
             }));
 
@@ -423,7 +429,7 @@ class AudioRecController {
         this._stopTimer();
 
         if (this._proc) {
-            try { this._proc.send_signal(2); } catch (_e) {}
+            this._proc.send_signal(2);
             this._proc = null;
         }
 
@@ -488,17 +494,17 @@ class AudioRecController {
         return cand;
     }
 
-    async _discard(path) {
-        if (!path) return;
-        try {
-            const f = Gio.File.new_for_path(path);
-            await new Promise((resolve) => {
-                f.delete_async(GLib.PRIORITY_DEFAULT, null, (source, res) => {
-                    try { source.delete_finish(res); } catch (_e) {}
-                    resolve();
-                });
-            });
-        } catch (_e) {}
+    _discard(path) {
+        if (!path)
+            return;
+        const f = Gio.File.new_for_path(path);
+        f.delete_async(GLib.PRIORITY_DEFAULT, null, (source, res) => {
+            try {
+                source.delete_finish(res);
+            } catch (_e) {
+                // File may already be gone; nothing to recover.
+            }
+        });
     }
 
     _showRecordButton() {
@@ -508,6 +514,7 @@ class AudioRecController {
         this._recordButton.setTime('0:00');
         Main.panel.addToStatusArea('audiorec-recording', this._recordButton, 999, 'right');
 
+        this._stopTimer();
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
             const elapsed = (GLib.get_monotonic_time() - this._startTime) / 1e6;
             this._recordButton.setTime(formatDuration(elapsed));
@@ -574,7 +581,7 @@ class AudioRecController {
     _stopPlayback() {
         this._clearPlayingVisual();
         if (this._playProc) {
-            try { this._playProc.send_signal(2); } catch (_e) {}
+            this._playProc.send_signal(2);
             this._playProc = null;
         }
         this._playingPath = null;
@@ -589,7 +596,7 @@ class AudioRecController {
     destroy() {
         this._stopTimer();
         if (this._proc) {
-            try { this._proc.send_signal(2); } catch (_e) {}
+            this._proc.send_signal(2);
             this._proc = null;
         }
         this._stopPlayback();

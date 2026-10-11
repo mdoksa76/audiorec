@@ -47,11 +47,11 @@ function saveTextAsync(file, text) {
     });
 }
 
-function deleteFileAsync(file) {
+function trashFileAsync(file) {
     return new Promise((resolve, reject) => {
-        file.delete_async(GLib.PRIORITY_DEFAULT, null, (source, res) => {
+        file.trash_async(GLib.PRIORITY_DEFAULT, null, (source, res) => {
             try {
-                source.delete_finish(res);
+                source.trash_finish(res);
                 resolve();
             } catch (e) {
                 if (e instanceof GLib.Error &&
@@ -140,13 +140,13 @@ export class Store {
         await this._persist();
     }
 
-    async deleteFile(id) {
+    async trashFile(id) {
         const item = this._items.find(i => i.id === id);
         this._items = this._items.filter(i => i.id !== id);
         await this._persist();
         if (item && item.path) {
             const f = Gio.File.new_for_path(item.path);
-            await deleteFileAsync(f);
+            await trashFileAsync(f);
         }
     }
 
